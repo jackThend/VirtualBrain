@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { PARTICLE_COUNT } from '../types'
 import { generateBrain } from '../geometry/brain'
-import { generateChaos } from '../geometry/chaos'
+import { generateGears } from '../geometry/gears'
 import { generateBulb } from '../geometry/bulb'
 import { generateGlobe } from '../geometry/globe'
 import { hexToRgb, type Theme, themes } from '../utils/colors'
@@ -73,8 +73,8 @@ export class ParticleSystem {
     console.log('[VB] Brain done, positions:', brain.positions.length)
 
     
-    const chaos = generateChaos()
-    console.log('[VB] Chaos done, positions:', chaos.length)
+    const gears = generateGears()
+    console.log('[VB] Gears done, positions:', gears.length)
 
     
     const bulb = generateBulb()
@@ -86,7 +86,7 @@ export class ParticleSystem {
 
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.BufferAttribute(brain.positions, 3))
-    geometry.setAttribute('aPosChaos', new THREE.BufferAttribute(chaos, 3))
+    geometry.setAttribute('aPosGears', new THREE.BufferAttribute(gears, 3))
     geometry.setAttribute('aPosBulb', new THREE.BufferAttribute(bulb.positions, 3))
     geometry.setAttribute('aPosGlobe', new THREE.BufferAttribute(globe.positions, 3))
     geometry.setAttribute('aNormBrain', new THREE.BufferAttribute(brain.normals, 3))

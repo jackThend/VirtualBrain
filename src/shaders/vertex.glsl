@@ -4,7 +4,7 @@ uniform vec2 uMouse;
 uniform float uHoverIntensity;
 uniform float uRepelStrength;
 
-attribute vec3 aPosChaos;
+attribute vec3 aPosGears;
 attribute vec3 aPosBulb;
 attribute vec3 aPosGlobe;
 attribute vec3 aNormBrain;
@@ -92,11 +92,11 @@ void main() {
 
   if (stage < 0.5) {
     posA = position;
-    posB = aPosChaos;
+    posB = aPosGears;
     normA = aNormBrain;
     normB = aNormBrain;
   } else if (stage < 1.5) {
-    posA = aPosChaos;
+    posA = aPosGears;
     posB = aPosBulb;
     normA = aNormBulb;
     normB = aNormBulb;
