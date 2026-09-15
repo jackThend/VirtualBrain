@@ -1,27 +1,30 @@
 {
-  "name": "virtualbrain-web",
-  "version": "0.1.0",
+  "name": "virtualbrain-scrollytelling",
   "private": true,
+  "version": "0.1.0",
+  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "autoprefixer": "^10.4.22",
-    "next": "14.2.3",
-    "react": "^18",
-    "react-dom": "^18"
+    "gsap": "^3.12.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.160.0"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.3",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/three": "^0.160.0",
+    "@vitejs/plugin-react-swc": "^4.0.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "react-refresh": "^0.14.2",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.3.3",
+    "vite": "^6.0.0",
+    "vite-plugin-glsl": "^1.3.0"
   }
 }
