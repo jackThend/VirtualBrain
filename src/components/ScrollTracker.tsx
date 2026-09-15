@@ -5,7 +5,7 @@ interface ScrollTrackerProps {
   theme: Theme
 }
 
-const SECTIONS = ['Cerebro', 'Caos', 'Bombilla', 'Global']
+const SECTIONS = ['Hero', 'Problema', 'Solución', 'CTA']
 
 export default function ScrollTracker({ progress, theme }: ScrollTrackerProps) {
   const active = Math.min(Math.floor(progress), SECTIONS.length - 1)

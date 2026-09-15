@@ -12,64 +12,84 @@ function createGear(
   rotX: number,
 ): Float32Array {
   const verts: number[] = []
-  const innerRadius = radius * 0.6
-  const segments = 64
+  const innerRadius = radius * 0.55
+  const segments = 72
+  const layers = 8
 
-  const yTop = thickness / 2
-  const yBottom = -thickness / 2
+  for (let layer = 0; layer < layers; layer++) {
+    const layerT = layer / (layers - 1)
+    const y = (layerT - 0.5) * thickness
+    const layerRadius = radius * (1.0 - Math.abs(layerT - 0.5) * 0.15)
 
-  for (let i = 0; i < segments; i++) {
-    const angle1 = (i / segments) * Math.PI * 2
-    const angle2 = ((i + 1) / segments) * Math.PI * 2
+    for (let i = 0; i < segments; i++) {
+      const angle1 = (i / segments) * Math.PI * 2
+      const angle2 = ((i + 1) / segments) * Math.PI * 2
 
-    const toothAngle1 = (i / segments) * teeth * Math.PI * 2
-    const toothAngle2 = ((i + 1) / segments) * teeth * Math.PI * 2
+      const toothAngle1 = (i / segments) * teeth * Math.PI * 2
+      const toothAngle2 = ((i + 1) / segments) * teeth * Math.PI * 2
 
-    const isTooth1 = Math.abs(Math.sin(toothAngle1)) > 0.3
-    const isTooth2 = Math.abs(Math.sin(toothAngle2)) > 0.3
+      const isTooth1 = Math.abs(Math.sin(toothAngle1)) > 0.35
+      const isTooth2 = Math.abs(Math.sin(toothAngle2)) > 0.35
 
-    const r1 = isTooth1 ? radius + toothDepth : radius
-    const r2 = isTooth2 ? radius + toothDepth : radius
+      const r1 = isTooth1 ? layerRadius + toothDepth : layerRadius
+      const r2 = isTooth2 ? layerRadius + toothDepth : layerRadius
 
-    const x1 = Math.cos(angle1) * r1
-    const z1 = Math.sin(angle1) * r1
-    const x2 = Math.cos(angle2) * r2
-    const z2 = Math.sin(angle2) * r2
+      const x1 = Math.cos(angle1) * r1
+      const z1 = Math.sin(angle1) * r1
+      const x2 = Math.cos(angle2) * r2
+      const z2 = Math.sin(angle2) * r2
 
-    verts.push(x1, yTop, z1)
-    verts.push(x2, yTop, z2)
-    verts.push(cx, yTop, cz)
+      verts.push(x1, y, z1)
+      verts.push(x2, y, z2)
+      verts.push(cx, y, cz)
 
-    verts.push(x1, yBottom, z1)
-    verts.push(x2, yBottom, z2)
-    verts.push(cx, yBottom, cz)
+      if (layer < layers - 1) {
+        const nextLayerT = (layer + 1) / (layers - 1)
+        const nextY = (nextLayerT - 0.5) * thickness
 
-    verts.push(x1, yTop, z1)
-    verts.push(x2, yTop, z2)
-    verts.push(x1, yBottom, z1)
+        verts.push(x1, y, z1)
+        verts.push(x2, y, z2)
+        verts.push(x1, nextY, z1)
 
-    verts.push(x2, yTop, z2)
-    verts.push(x1, yBottom, z1)
-    verts.push(x2, yBottom, z2)
+        verts.push(x2, y, z2)
+        verts.push(x1, nextY, z1)
+        verts.push(x2, nextY, z2)
+      }
+    }
   }
 
-  const holeSegments = 24
-  for (let i = 0; i < holeSegments; i++) {
-    const angle1 = (i / holeSegments) * Math.PI * 2
-    const angle2 = ((i + 1) / holeSegments) * Math.PI * 2
+  const holeLayers = 6
+  for (let layer = 0; layer < holeLayers; layer++) {
+    const layerT = layer / (holeLayers - 1)
+    const y = (layerT - 0.5) * thickness
 
-    const x1 = Math.cos(angle1) * innerRadius
-    const z1 = Math.sin(angle1) * innerRadius
-    const x2 = Math.cos(angle2) * innerRadius
-    const z2 = Math.sin(angle2) * innerRadius
+    const holeSegments = 32
+    for (let i = 0; i < holeSegments; i++) {
+      const angle1 = (i / holeSegments) * Math.PI * 2
+      const angle2 = ((i + 1) / holeSegments) * Math.PI * 2
 
-    verts.push(x1, yTop, z1)
-    verts.push(x2, yTop, z2)
-    verts.push(cx, yTop, cz)
+      const x1 = Math.cos(angle1) * innerRadius
+      const z1 = Math.sin(angle1) * innerRadius
+      const x2 = Math.cos(angle2) * innerRadius
+      const z2 = Math.sin(angle2) * innerRadius
 
-    verts.push(x1, yBottom, z1)
-    verts.push(x2, yBottom, z2)
-    verts.push(cx, yBottom, cz)
+      verts.push(x1, y, z1)
+      verts.push(x2, y, z2)
+      verts.push(cx, y, cz)
+
+      if (layer < holeLayers - 1) {
+        const nextLayerT = (layer + 1) / (holeLayers - 1)
+        const nextY = (nextLayerT - 0.5) * thickness
+
+        verts.push(x1, y, z1)
+        verts.push(x2, y, z2)
+        verts.push(x1, nextY, z1)
+
+        verts.push(x2, y, z2)
+        verts.push(x1, nextY, z1)
+        verts.push(x2, nextY, z2)
+      }
+    }
   }
 
   const result = new Float32Array(verts)
@@ -105,8 +125,8 @@ function createGear(
 export function generateGears(): Float32Array {
   const positions = new Float32Array(PARTICLE_COUNT * 3)
 
-  const gear1Verts = createGear(-0.5, 0, 0, 0.7, 12, 0.15, 0.3, 0, 0)
-  const gear2Verts = createGear(0.5, 0, 0, 0.7, 12, 0.15, 0.3, Math.PI / 12, Math.PI / 6)
+  const gear1Verts = createGear(-0.45, 0, 0, 0.75, 14, 0.18, 0.45, 0, 0)
+  const gear2Verts = createGear(0.45, 0, 0, 0.75, 14, 0.18, 0.45, Math.PI / 14, Math.PI / 8)
 
   const totalVerts = gear1Verts.length + gear2Verts.length
   const vertsPerParticle = Math.max(1, Math.floor(totalVerts / PARTICLE_COUNT))
@@ -124,8 +144,8 @@ export function generateGears(): Float32Array {
     } else {
       const angle = Math.random() * Math.PI * 2
       const r = 0.3 + Math.random() * 0.5
-      positions[idx * 3] = Math.cos(angle) * r + (i < PARTICLE_COUNT / 2 ? -0.5 : 0.5)
-      positions[idx * 3 + 1] = (Math.random() - 0.5) * 0.3
+      positions[idx * 3] = Math.cos(angle) * r + (i < PARTICLE_COUNT / 2 ? -0.45 : 0.45)
+      positions[idx * 3 + 1] = (Math.random() - 0.5) * 0.4
       positions[idx * 3 + 2] = Math.sin(angle) * r
     }
     idx++
