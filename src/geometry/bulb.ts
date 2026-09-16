@@ -1,41 +1,50 @@
 import { PARTICLE_COUNT } from '../types'
 
+const BULB_X = -1.2
+const TILT = (-28 * Math.PI) / 180
+
 function getBulbProfile(t: number): number {
   if (t < 0.0) return 0
   if (t < 0.05) {
     const s = t / 0.05
-    return s * s * 0.18
+    return s * s * 0.16
   }
   if (t < 0.12) {
     const s = (t - 0.05) / 0.07
-    return 0.18 + s * 0.22
+    return 0.16 + s * 0.24
   }
   if (t < 0.35) {
     const s = (t - 0.12) / 0.23
-    return 0.4 + Math.sin(s * Math.PI) * 0.38
+    return 0.4 + Math.sin(s * Math.PI) * 0.42
   }
   if (t < 0.45) {
     const s = (t - 0.35) / 0.1
-    return 0.4 - s * 0.08
+    return 0.4 - s * 0.1
   }
   if (t < 0.5) {
-    return 0.32
+    return 0.3
   }
   if (t < 0.65) {
     const s = (t - 0.5) / 0.15
-    return 0.32 - s * 0.04
+    return 0.3 - s * 0.03
   }
   if (t < 0.85) {
     const s = (t - 0.65) / 0.2
-    const threadR = Math.sin(s * Math.PI * 5) * 0.018
-    return 0.28 + threadR
+    const threadR = Math.sin(s * Math.PI * 6) * 0.02
+    return 0.27 + threadR
   }
   const s = (t - 0.85) / 0.15
-  return 0.28 * (1 - s * 0.55)
+  return 0.27 * (1 - s * 0.5)
 }
 
 function getBulbY(t: number): number {
   return 1.0 - t * 2.2
+}
+
+function tilt(x: number, y: number): [number, number] {
+  const c = Math.cos(TILT)
+  const s = Math.sin(TILT)
+  return [x * c - y * s, x * s + y * c]
 }
 
 export function generateBulb(): { positions: Float32Array; normals: Float32Array } {
@@ -43,8 +52,8 @@ export function generateBulb(): { positions: Float32Array; normals: Float32Array
   const normals = new Float32Array(PARTICLE_COUNT * 3)
   let idx = 0
 
-  const glassCount = Math.floor(PARTICLE_COUNT * 0.52)
-  const capCount = Math.floor(PARTICLE_COUNT * 0.16)
+  const glassCount = Math.floor(PARTICLE_COUNT * 0.5)
+  const capCount = Math.floor(PARTICLE_COUNT * 0.18)
   const filamentCount = Math.floor(PARTICLE_COUNT * 0.22)
   const contactCount = PARTICLE_COUNT - glassCount - capCount - filamentCount
 
@@ -70,11 +79,14 @@ export function generateBulb(): { positions: Float32Array; normals: Float32Array
     const ny = dy / tangentLen
     const nz = Math.sin(angle) * dr / tangentLen
 
-    positions[idx * 3] = x
-    positions[idx * 3 + 1] = y
+    const [tx, ty] = tilt(x, y)
+    const [tnx, tny] = tilt(nx, ny)
+
+    positions[idx * 3] = tx + BULB_X
+    positions[idx * 3 + 1] = ty
     positions[idx * 3 + 2] = z
-    normals[idx * 3] = nx
-    normals[idx * 3 + 1] = ny
+    normals[idx * 3] = tnx
+    normals[idx * 3 + 1] = tny
     normals[idx * 3 + 2] = nz
     idx++
   }
@@ -87,58 +99,57 @@ export function generateBulb(): { positions: Float32Array; normals: Float32Array
 
     const x = Math.cos(angle) * r
     const z = Math.sin(angle) * r
+    const [tx, ty] = tilt(x, y)
+    const [tnx, tny] = tilt(Math.cos(angle), 0)
 
-    positions[idx * 3] = x
-    positions[idx * 3 + 1] = y
+    positions[idx * 3] = tx + BULB_X
+    positions[idx * 3 + 1] = ty
     positions[idx * 3 + 2] = z
-    normals[idx * 3] = Math.cos(angle)
-    normals[idx * 3 + 1] = 0
+    normals[idx * 3] = tnx
+    normals[idx * 3 + 1] = tny
     normals[idx * 3 + 2] = Math.sin(angle)
     idx++
   }
 
+  const perArch = Math.floor(filamentCount / 2)
   for (let i = 0; i < filamentCount; i++) {
-    const t = i / filamentCount
-    const mainAngle = t * Math.PI * 2
+    const arch = i < perArch ? -1 : 1
+    const j = i % perArch
+    const u = perArch > 1 ? j / (perArch - 1) : 0
 
-    const archHeight = 0.48
-    const archRadius = 0.07
-    const loopFreq = 4
+    const x = arch * 0.055 + (u - 0.5) * 0.16
+    const y = -0.05 + Math.sin(u * Math.PI) * 0.45
+    const z = (Math.random() - 0.5) * 0.02
 
-    const loopAngle = mainAngle * loopFreq
-    const x = Math.sin(loopAngle) * archRadius
-    const y = -0.08 + Math.sin(t * Math.PI) * archHeight
-    const z = Math.cos(loopAngle) * archRadius * 0.3
+    const glow = 0.012
+    const [tx, ty] = tilt(x + (Math.random() - 0.5) * glow, y + (Math.random() - 0.5) * glow)
+    const [tnx, tny] = tilt(0, 1)
 
-    const supportY = -0.08 + Math.sin(t * Math.PI * 0.3) * 0.18
-
-    const finalY = t < 0.08 || t > 0.92 ? supportY : y
-
-    const glow = 0.01
-    positions[idx * 3] = x + (Math.random() - 0.5) * glow
-    positions[idx * 3 + 1] = finalY + (Math.random() - 0.5) * glow
-    positions[idx * 3 + 2] = z + (Math.random() - 0.5) * glow
-    normals[idx * 3] = 0
-    normals[idx * 3 + 1] = 1
+    positions[idx * 3] = tx + BULB_X
+    positions[idx * 3 + 1] = ty
+    positions[idx * 3 + 2] = z
+    normals[idx * 3] = tnx
+    normals[idx * 3 + 1] = tny
     normals[idx * 3 + 2] = 0
     idx++
   }
 
   for (let i = 0; i < contactCount; i++) {
-    const t = i / contactCount
     const angle = Math.random() * Math.PI * 2
 
-    const r = 0.16 + Math.random() * 0.09
-    const y = -1.05 - Math.random() * 0.1
+    const r = 0.14 + Math.random() * 0.08
+    const y = -1.08 - Math.random() * 0.1
 
     const x = Math.cos(angle) * r
     const z = Math.sin(angle) * r
+    const [tx, ty] = tilt(x, y)
+    const [tnx, tny] = tilt(Math.cos(angle), -0.5)
 
-    positions[idx * 3] = x
-    positions[idx * 3 + 1] = y
+    positions[idx * 3] = tx + BULB_X
+    positions[idx * 3 + 1] = ty
     positions[idx * 3 + 2] = z
-    normals[idx * 3] = Math.cos(angle)
-    normals[idx * 3 + 1] = -0.5
+    normals[idx * 3] = tnx
+    normals[idx * 3 + 1] = tny
     normals[idx * 3 + 2] = Math.sin(angle)
     idx++
   }

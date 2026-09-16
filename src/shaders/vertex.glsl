@@ -3,8 +3,10 @@ uniform float uTime;
 uniform vec2 uMouse;
 uniform float uHoverIntensity;
 uniform float uRepelStrength;
+uniform vec2 uRepelCenter;
+uniform vec2 uRepelSize;
 
-attribute vec3 aPosGears;
+attribute vec3 aPosChaos;
 attribute vec3 aPosBulb;
 attribute vec3 aPosGlobe;
 attribute vec3 aNormBrain;
@@ -92,11 +94,11 @@ void main() {
 
   if (stage < 0.5) {
     posA = position;
-    posB = aPosGears;
+    posB = aPosChaos;
     normA = aNormBrain;
     normB = aNormBrain;
   } else if (stage < 1.5) {
-    posA = aPosGears;
+    posA = aPosChaos;
     posB = aPosBulb;
     normA = aNormBulb;
     normB = aNormBulb;
@@ -112,6 +114,10 @@ void main() {
     normB = aNormGlobe;
   }
 
+  float brainWeight = (stage < 0.5) ? (1.0 - smoothstep(0.0, 1.0, fractP)) : 0.0;
+  float breathe = 1.0 + 0.022 * sin(uTime * 1.4) * brainWeight;
+  posA *= breathe;
+
   float swirl = sin(fractP * 3.14159265) * 0.6;
   vec3 noiseOffset = curlNoise3D(position * 0.8 + uTime * 0.1) * swirl;
   vec3 morphedPos = mix(posA, posB, smoothstep(0.0, 1.0, fractP)) + noiseOffset;
@@ -124,6 +130,15 @@ void main() {
   vec4 mvPosition = modelViewMatrix * vec4(morphedPos, 1.0);
 
   vViewDir = normalize(-mvPosition.xyz);
+
+  vec2 haloDelta = mvPosition.xy - uRepelCenter;
+  vec2 haloQ = haloDelta / max(uRepelSize, vec2(0.001));
+  float haloInside = 1.0 - smoothstep(0.7, 1.0, length(haloQ));
+  if (haloInside > 0.001 && uRepelStrength > 0.001) {
+    vec2 pushDir = haloDelta / max(length(haloDelta), 0.0001);
+    mvPosition.xy += pushDir * haloInside * uRepelStrength * 0.55;
+    mvPosition.z -= haloInside * uRepelStrength * 0.45;
+  }
 
   vec4 worldPos = modelMatrix * vec4(morphedPos, 1.0);
   vec2 mouseWorld = uMouse;

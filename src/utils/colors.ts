@@ -16,17 +16,17 @@ export type Theme = 'espresso' | 'monochrome'
 
 export const themes: Record<Theme, ThemeColors> = {
   espresso: {
-    bg: '#0a0a0a',
-    particle1: '#ffffff',
-    particle2: '#cccccc',
-    particle3: '#888888',
-    text: '#ffffff',
-    textMuted: '#999999',
-    cardBg: 'rgba(255, 255, 255, 0.06)',
-    cardBorder: 'rgba(255, 255, 255, 0.1)',
-    ctaBg: '#ffffff',
-    ctaText: '#000000',
-    navbarBg: 'rgba(10, 10, 10, 0.8)',
+    bg: '#131211',
+    particle1: '#a88f6c',
+    particle2: '#6b9666',
+    particle3: '#db8f38',
+    text: '#ede9e1',
+    textMuted: '#b8ab93',
+    cardBg: 'rgba(24, 22, 20, 0.55)',
+    cardBorder: 'rgba(237, 233, 225, 0.14)',
+    ctaBg: '#ede9e1',
+    ctaText: '#131211',
+    navbarBg: 'rgba(19, 18, 17, 0.8)',
   },
   monochrome: {
     bg: '#fafaf9',

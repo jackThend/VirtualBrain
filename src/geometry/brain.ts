@@ -1,5 +1,7 @@
 import { PARTICLE_COUNT } from '../types'
 
+const BRAIN_X = 1.15
+
 function smoothstep(edge0: number, edge1: number, x: number): number {
   const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)))
   return t * t * (3 - 2 * t)
@@ -49,16 +51,18 @@ export function generateBrain(): { positions: Float32Array; normals: Float32Arra
     y *= 0.72
     z *= 0.85
 
-    const gyri = fbm(x * 5, y * 5, z * 5) * 0.12
-    const sulci = Math.pow(Math.abs(fbm(x * 7, y * 7, z * 7)), 2.5) * -0.1
-    const disp = 1.0 + gyri + sulci
+    const harmonic = Math.sin(x * 9 + z * 5) * Math.sin(y * 11 - z * 4) * 0.045
+    const ridged = Math.pow(1 - Math.abs(fbm(x * 6, y * 6, z * 6)), 2) * 0.09
+    const sulci = Math.pow(Math.abs(fbm(x * 8 + 40, y * 8, z * 8)), 2.5) * -0.12
+    const disp = 1.0 + harmonic + ridged + sulci
 
     x *= disp
     y *= disp
     z *= disp
 
-    const fissurePull = Math.exp(-Math.pow(x * 15, 2)) * 0.06
-    x -= side * fissurePull
+    const fissureGap = Math.exp(-Math.pow(x * 9, 2)) * 0.12
+    x += side * fissureGap
+    x -= side * Math.exp(-Math.pow(x * 15, 2)) * 0.04
 
     const frontalBulge = smoothstep(0.3, 0.8, -z) * 0.15
     z -= frontalBulge
@@ -67,7 +71,7 @@ export function generateBrain(): { positions: Float32Array; normals: Float32Arra
     x *= 1 - occipitalTaper * 0.18
 
     const len = Math.sqrt(x * x + y * y + z * z) || 1
-    positions[idx * 3] = x
+    positions[idx * 3] = x + BRAIN_X
     positions[idx * 3 + 1] = y
     positions[idx * 3 + 2] = z
     normals[idx * 3] = x / len
@@ -95,7 +99,7 @@ export function generateBrain(): { positions: Float32Array; normals: Float32Arra
     z *= disp
 
     const len = Math.sqrt(x * x + y * y + z * z) || 1
-    positions[idx * 3] = x
+    positions[idx * 3] = x + BRAIN_X
     positions[idx * 3 + 1] = y
     positions[idx * 3 + 2] = z
     normals[idx * 3] = x / len
@@ -115,7 +119,7 @@ export function generateBrain(): { positions: Float32Array; normals: Float32Arra
     const z = -0.18 + Math.cos(angle) * r - t * 0.22
 
     const len = Math.sqrt(x * x + y * y + z * z) || 1
-    positions[idx * 3] = x
+    positions[idx * 3] = x + BRAIN_X
     positions[idx * 3 + 1] = y
     positions[idx * 3 + 2] = z
     normals[idx * 3] = x / len
@@ -127,10 +131,10 @@ export function generateBrain(): { positions: Float32Array; normals: Float32Arra
   for (let i = 0; i < remaining; i++) {
     const y = (Math.random() - 0.5) * 1.4
     const z = (Math.random() - 0.5) * 0.9
-    const x = (Math.random() - 0.5) * 0.04
+    const x = (Math.random() - 0.5) * 0.05
 
     const len = Math.sqrt(x * x + y * y + z * z) || 1
-    positions[idx * 3] = x
+    positions[idx * 3] = x + BRAIN_X
     positions[idx * 3 + 1] = y
     positions[idx * 3 + 2] = z
     normals[idx * 3] = x / len

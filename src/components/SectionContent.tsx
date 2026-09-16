@@ -46,6 +46,20 @@ function isSectionActive(sectionIndex: number, progress: number): boolean {
   return getSectionOpacity(sectionIndex, progress) > 0.01
 }
 
+function Scrim({ theme, position }: { theme: Theme; position: 'left' | 'center' | 'right' }) {
+  const dark = theme === 'espresso'
+  const at = position === 'left' ? '25% 50%' : position === 'right' ? '75% 50%' : '50% 50%'
+  const color = dark ? '19, 18, 17' : '250, 250, 249'
+  return (
+    <div
+      className="absolute inset-0 pointer-events-none"
+      style={{
+        background: `radial-gradient(ellipse 60% 70% at ${at}, rgba(${color}, 0.72), transparent 70%)`,
+      }}
+    />
+  )
+}
+
 export default function SectionContent({ progress, theme }: SectionContentProps) {
   const colors = themes[theme]
 
@@ -60,6 +74,7 @@ export default function SectionContent({ progress, theme }: SectionContentProps)
           pointerEvents: isSectionActive(0, progress) ? 'auto' : 'none',
         }}
       >
+        <Scrim theme={theme} position="left" />
         <div className="w-full max-w-7xl mx-auto px-8 md:px-16">
           <div className="max-w-xl">
             <p className="text-sm font-semibold tracking-widest uppercase mb-4" style={{ color: colors.particle3 }}>
@@ -99,6 +114,7 @@ export default function SectionContent({ progress, theme }: SectionContentProps)
           pointerEvents: isSectionActive(1, progress) ? 'auto' : 'none',
         }}
       >
+        <Scrim theme={theme} position="center" />
         <div className="w-full max-w-4xl mx-auto px-8 text-center">
           <p className="text-sm font-semibold tracking-widest uppercase mb-4" style={{ color: colors.particle3 }}>
             El Problema
@@ -120,6 +136,7 @@ export default function SectionContent({ progress, theme }: SectionContentProps)
           pointerEvents: isSectionActive(2, progress) ? 'auto' : 'none',
         }}
       >
+        <Scrim theme={theme} position="right" />
         <div className="w-full max-w-7xl mx-auto px-8 md:px-16">
           <div className="max-w-xl ml-auto">
             <p className="text-sm font-semibold tracking-widest uppercase mb-4" style={{ color: colors.particle3 }}>
@@ -153,6 +170,7 @@ export default function SectionContent({ progress, theme }: SectionContentProps)
           pointerEvents: isSectionActive(3, progress) ? 'auto' : 'none',
         }}
       >
+        <Scrim theme={theme} position="center" />
         <div className="w-full max-w-3xl mx-auto px-8 text-center">
           <p className="text-sm font-semibold tracking-widest uppercase mb-4" style={{ color: colors.particle3 }}>
             Alcance Global

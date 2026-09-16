@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Lenis from 'lenis'
 import WebGLCanvas from './components/WebGLCanvas'
 import SectionContent from './components/SectionContent'
 import ScrollTracker from './components/ScrollTracker'
@@ -29,6 +30,14 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    const lenis = new Lenis({ lerp: 0.09, smoothWheel: true })
+    let rafId = 0
+    const raf = (time: number) => {
+      lenis.raf(time)
+      rafId = requestAnimationFrame(raf)
+    }
+    rafId = requestAnimationFrame(raf)
+
     const onScroll = () => {
       if (!containerRef.current) return
       const rect = containerRef.current.getBoundingClientRect()
@@ -41,7 +50,11 @@ export default function App() {
 
     window.addEventListener('scroll', onScroll, { passive: true })
     onScroll()
-    return () => window.removeEventListener('scroll', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      cancelAnimationFrame(rafId)
+      lenis.destroy()
+    }
   }, [])
 
   useEffect(() => {

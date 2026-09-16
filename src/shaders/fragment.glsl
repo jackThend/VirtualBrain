@@ -12,17 +12,49 @@ varying float vSeed;
 varying float vDistToMouse;
 varying float vMorphBlend;
 
+float sdTriangle(vec2 p) {
+  const float k = 1.7320508;
+  p.x = abs(p.x) - 0.28;
+  p.y = p.y + 0.28 / k;
+  if (p.x + k * p.y > 0.0) p = vec2(p.x - k * p.y, -k * p.x - p.y) / 2.0;
+  p.x -= clamp(p.x, -0.56, 0.0);
+  return -length(p) * sign(p.y);
+}
+
 void main() {
   vec2 center = gl_PointCoord - 0.5;
   float dist = length(center);
 
-  float rand1 = fract(sin(vSeed * 12.9898) * 43758.5453);
-  float rand2 = fract(sin(vSeed * 78.233) * 43758.5453);
+  float pick = fract(sin(vSeed * 91.7) * 43758.5453);
+  vec3 champagne = vec3(0.922, 0.863, 0.722);
 
-  float alpha = smoothstep(0.5, 0.05, dist);
+  vec3 base = mix(uColor1, uColor2, fract(vSeed * 7.31));
+  base = mix(base, uColor3, step(0.72, fract(vSeed * 3.77)) * 0.65);
+  base = mix(base, champagne, vFresnel * 0.45);
 
-  vec3 col = uColor1;
-  col += col * (0.3 * vFresnel);
+  vec3 col = base;
+  col += col * (0.35 * vFresnel);
+
+  float alpha = 0.0;
+  if (pick < 0.60) {
+    float sd = sdTriangle(center);
+    float border = 1.0 - smoothstep(0.0, 0.035, abs(sd));
+    float fill = 1.0 - smoothstep(-0.02, 0.0, sd);
+    alpha = border * 0.95;
+    col = mix(col, champagne, fill * 0.15);
+    if (dist > 0.5) discard;
+  } else if (pick < 0.85) {
+    float sd = sdTriangle(center);
+    float fill = 1.0 - smoothstep(-0.03, 0.02, sd);
+    alpha = fill * 0.55;
+    if (dist > 0.5) discard;
+  } else {
+    float core = 1.0 - smoothstep(0.0, 0.1, dist);
+    float crossX = (1.0 - smoothstep(0.0, 0.025, abs(center.y))) * (1.0 - smoothstep(0.0, 0.3, abs(center.x)));
+    float crossY = (1.0 - smoothstep(0.0, 0.025, abs(center.x))) * (1.0 - smoothstep(0.0, 0.3, abs(center.y)));
+    alpha = clamp(core + (crossX + crossY) * 0.6, 0.0, 1.0);
+    col = mix(col, champagne, 0.7);
+  }
 
   float mouseGlow = 1.0 - smoothstep(0.0, 0.65, vDistToMouse);
   col += col * mouseGlow * 0.4;

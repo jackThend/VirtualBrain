@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { PARTICLE_COUNT } from '../types'
 import { generateBrain } from '../geometry/brain'
-import { generateGears } from '../geometry/gears'
+import { generateChaos } from '../geometry/chaos'
 import { generateBulb } from '../geometry/bulb'
 import { generateGlobe } from '../geometry/globe'
 import { hexToRgb, type Theme, themes } from '../utils/colors'
@@ -14,7 +14,10 @@ export class ParticleSystem {
   private renderer: THREE.WebGLRenderer
   private material!: THREE.ShaderMaterial
   private points!: THREE.Points
+  private wireGroup: THREE.Group | null = null
+  private wireMat: THREE.LineBasicMaterial | null = null
   private clock: number
+  private progress: number
   private mouseX: number
   private mouseY: number
   private hoverIntensity: number
@@ -23,8 +26,9 @@ export class ParticleSystem {
   private onResizeBound: () => void
 
   constructor(canvas: HTMLCanvasElement) {
-    
+
     this.clock = 0
+    this.progress = 0
     this.mouseX = 0
     this.mouseY = 0
     this.hoverIntensity = 0
@@ -32,11 +36,11 @@ export class ParticleSystem {
     this.animationId = null
 
     this.scene = new THREE.Scene()
-    
+
 
     this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100)
     this.camera.position.z = 4.5
-    
+
 
     const gl = canvas.getContext('webgl2') || canvas.getContext('webgl')
     console.log('[VB] WebGL context:', gl ? 'OK' : 'FAILED')
@@ -57,36 +61,36 @@ export class ParticleSystem {
 
     try {
       this.initParticles()
-      
+
     } catch (err) {
       console.error('[VB] Error initializing particles:', err)
       throw err
     }
 
     this.applyTheme(this.currentTheme)
-    
+
   }
 
   private initParticles() {
-    
+
     const brain = generateBrain()
     console.log('[VB] Brain done, positions:', brain.positions.length)
 
-    
-    const gears = generateGears()
-    console.log('[VB] Gears done, positions:', gears.length)
 
-    
+    const chaos = generateChaos()
+    console.log('[VB] Chaos done, positions:', chaos.length)
+
+
     const bulb = generateBulb()
     console.log('[VB] Bulb done, positions:', bulb.positions.length)
 
-    
+
     const globe = generateGlobe()
     console.log('[VB] Globe done, positions:', globe.positions.length)
 
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.BufferAttribute(brain.positions, 3))
-    geometry.setAttribute('aPosGears', new THREE.BufferAttribute(gears, 3))
+    geometry.setAttribute('aPosChaos', new THREE.BufferAttribute(chaos, 3))
     geometry.setAttribute('aPosBulb', new THREE.BufferAttribute(bulb.positions, 3))
     geometry.setAttribute('aPosGlobe', new THREE.BufferAttribute(globe.positions, 3))
     geometry.setAttribute('aNormBrain', new THREE.BufferAttribute(brain.normals, 3))
@@ -98,7 +102,7 @@ export class ParticleSystem {
       seeds[i] = Math.random()
     }
     geometry.setAttribute('aSeed', new THREE.BufferAttribute(seeds, 1))
-    
+
 
     this.material = new THREE.ShaderMaterial({
       vertexShader,
@@ -108,7 +112,9 @@ export class ParticleSystem {
         uTime: { value: 0.0 },
         uMouse: { value: new THREE.Vector2(0, 0) },
         uHoverIntensity: { value: 0.0 },
-        uRepelStrength: { value: 1.0 },
+        uRepelStrength: { value: 0.6 },
+        uRepelCenter: { value: new THREE.Vector2(-1.1, 0.1) },
+        uRepelSize: { value: new THREE.Vector2(1.2, 0.9) },
         uColor1: { value: new THREE.Vector3(1.0, 1.0, 1.0) },
         uColor2: { value: new THREE.Vector3(0.8, 0.8, 0.8) },
         uColor3: { value: new THREE.Vector3(0.53, 0.53, 0.53) },
@@ -117,11 +123,46 @@ export class ParticleSystem {
       depthWrite: false,
       blending: THREE.NormalBlending,
     })
-    
+
 
     this.points = new THREE.Points(geometry, this.material)
     this.scene.add(this.points)
     console.log('[VB] Points added to scene, particle count:', PARTICLE_COUNT)
+
+    this.initWireframes()
+  }
+
+  private initWireframes() {
+    const group = new THREE.Group()
+    const mat = new THREE.LineBasicMaterial({
+      color: 0xdb8f38,
+      transparent: true,
+      opacity: 0,
+    })
+
+    for (let i = 0; i < 16; i++) {
+      const isTetra = i % 2 === 0
+      const geo = isTetra
+        ? new THREE.TetrahedronGeometry(0.25 + Math.random() * 0.3)
+        : new THREE.OctahedronGeometry(0.25 + Math.random() * 0.3)
+      const edges = new THREE.EdgesGeometry(geo)
+      const line = new THREE.LineSegments(edges, mat)
+      line.position.set(
+        (Math.random() - 0.5) * 5,
+        (Math.random() - 0.5) * 4,
+        (Math.random() - 0.5) * 4 - 0.5,
+      )
+      line.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0)
+      line.userData.spin = 0.2 + Math.random() * 0.5
+      line.userData.floatSpeed = 0.3 + Math.random() * 0.5
+      line.userData.floatOffset = Math.random() * Math.PI * 2
+      group.add(line)
+      geo.dispose()
+    }
+
+    this.wireGroup = group
+    this.wireMat = mat
+    this.scene.add(group)
   }
 
   applyTheme(theme: Theme) {
@@ -137,14 +178,36 @@ export class ParticleSystem {
 
     if (theme === 'monochrome') {
       this.material.blending = THREE.NormalBlending
+      this.wireMat?.color.set(0x14161a)
     } else {
       this.material.blending = THREE.NormalBlending
+      this.wireMat?.color.set(0xdb8f38)
     }
     console.log('[VB] Theme applied:', theme)
   }
 
   setProgress(progress: number) {
+    this.progress = progress
     this.material.uniforms.uProgress.value = progress
+
+    const stage = Math.floor(progress)
+    if (stage <= 0) {
+      this.material.uniforms.uRepelCenter.value.set(-1.1, 0.1)
+      this.material.uniforms.uRepelSize.value.set(1.25, 0.95)
+      this.material.uniforms.uRepelStrength.value = 0.6
+    } else if (stage === 1) {
+      this.material.uniforms.uRepelCenter.value.set(0, 0.15)
+      this.material.uniforms.uRepelSize.value.set(1.7, 0.75)
+      this.material.uniforms.uRepelStrength.value = 0.35
+    } else if (stage === 2) {
+      this.material.uniforms.uRepelCenter.value.set(1.1, 0)
+      this.material.uniforms.uRepelSize.value.set(1.25, 1.0)
+      this.material.uniforms.uRepelStrength.value = 0.6
+    } else {
+      this.material.uniforms.uRepelCenter.value.set(0, 0.1)
+      this.material.uniforms.uRepelSize.value.set(1.45, 0.95)
+      this.material.uniforms.uRepelStrength.value = 0.5
+    }
   }
 
   setMouse(x: number, y: number) {
@@ -161,12 +224,28 @@ export class ParticleSystem {
   }
 
   start() {
-    
+
     let frameCount = 0
     const animate = () => {
       this.clock += 0.016
       this.material.uniforms.uTime.value = this.clock
       this.resetHover()
+
+      this.points.rotation.y = this.clock * 0.06 + this.progress * 0.4
+      this.points.rotation.x = Math.sin(this.clock * 0.2) * 0.03
+
+      if (this.wireGroup && this.wireMat) {
+        const chaosWeight = Math.max(0, 1 - Math.abs(this.progress - 1))
+        this.wireMat.opacity = chaosWeight * 0.22
+        this.wireGroup.visible = chaosWeight > 0.01
+        for (const child of this.wireGroup.children) {
+          const line = child as THREE.LineSegments
+          line.rotation.x += 0.004 * (line.userData.spin as number)
+          line.rotation.y += 0.005 * (line.userData.spin as number)
+          line.position.y += Math.sin(this.clock * (line.userData.floatSpeed as number) + (line.userData.floatOffset as number)) * 0.0015
+        }
+      }
+
       this.renderer.render(this.scene, this.camera)
       frameCount++
       if (frameCount <= 3) {

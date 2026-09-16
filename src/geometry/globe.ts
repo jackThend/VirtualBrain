@@ -11,7 +11,7 @@ const CONTINENTS = [
       [45, -65], [40, -70], [35, -85], [25, -80], [20, -90],
       [18, -100], [15, -88], [10, -84],
     ],
-    density: 0.20,
+    density: 0.22,
   },
   {
     name: 'SouthAmerica',
@@ -22,7 +22,7 @@ const CONTINENTS = [
       [-40, -62], [-35, -52], [-25, -48], [-20, -45], [-15, -50],
       [-10, -55], [-5, -60], [0, -65], [5, -70],
     ],
-    density: 0.12,
+    density: 0.13,
   },
   {
     name: 'Europe',
@@ -34,7 +34,7 @@ const CONTINENTS = [
       [58, 25], [60, 30], [62, 25], [65, 25], [68, 28],
       [70, 25], [72, 30], [70, 40], [65, 40], [60, 40],
     ],
-    density: 0.14,
+    density: 0.15,
   },
   {
     name: 'Africa',
@@ -47,7 +47,7 @@ const CONTINENTS = [
       [20, -15], [25, -10], [30, -5], [32, 0], [35, 5],
       [37, 10], [35, 15], [33, 10], [30, 10],
     ],
-    density: 0.14,
+    density: 0.15,
   },
   {
     name: 'Asia',
@@ -61,7 +61,7 @@ const CONTINENTS = [
       [60, 50], [65, 55], [70, 50], [72, 70], [70, 90],
       [65, 110], [60, 130], [55, 140], [50, 145], [45, 150],
     ],
-    density: 0.20,
+    density: 0.22,
   },
   {
     name: 'Australia',
@@ -71,7 +71,7 @@ const CONTINENTS = [
       [-15, 128], [-12, 132], [-18, 142], [-28, 152], [-32, 152],
       [-35, 150],
     ],
-    density: 0.08,
+    density: 0.09,
   },
 ]
 
@@ -95,15 +95,20 @@ export function generateGlobe(): { positions: Float32Array; normals: Float32Arra
   const R = 1.2
   let idx = 0
 
-  let totalContinentParticles = 0
-  for (const c of CONTINENTS) {
-    totalContinentParticles += Math.floor(PARTICLE_COUNT * c.density)
+  const push = (x: number, y: number, z: number) => {
+    if (idx >= PARTICLE_COUNT) return
+    const len = Math.sqrt(x * x + y * y + z * z) || 1
+    positions[idx * 3] = x
+    positions[idx * 3 + 1] = y
+    positions[idx * 3 + 2] = z
+    normals[idx * 3] = x / len
+    normals[idx * 3 + 1] = y / len
+    normals[idx * 3 + 2] = z / len
+    idx++
   }
-  const ringCount = Math.floor(PARTICLE_COUNT * 0.06)
-  const oceanCount = PARTICLE_COUNT - totalContinentParticles - ringCount
 
   for (const continent of CONTINENTS) {
-    const count = Math.floor(PARTICLE_COUNT * continent.density)
+    const count = Math.floor(PARTICLE_COUNT * continent.density * 0.92)
     const pts = continent.points
 
     for (let i = 0; i < count; i++) {
@@ -112,68 +117,53 @@ export function generateGlobe(): { positions: Float32Array; normals: Float32Arra
       const t = Math.random()
       const center = lerpPoints(pts[edgeIdx] as [number, number], pts[nextIdx] as [number, number], t)
 
-      const jitterLat = center[0] + (Math.random() - 0.5) * 10
-      const jitterLon = center[1] + (Math.random() - 0.5) * 10
+      const jitterLat = center[0] + (Math.random() - 0.5) * 6
+      const jitterLon = center[1] + (Math.random() - 0.5) * 6
 
       const [x, y, z] = latLonToVec3(jitterLat, jitterLon, R)
-      const len = Math.sqrt(x * x + y * y + z * z) || 1
-      positions[idx * 3] = x
-      positions[idx * 3 + 1] = y
-      positions[idx * 3 + 2] = z
-      normals[idx * 3] = x / len
-      normals[idx * 3 + 1] = y / len
-      normals[idx * 3 + 2] = z / len
-      idx++
+      push(x, y, z)
     }
   }
 
-  for (let i = 0; i < ringCount; i++) {
-    const lat = (i / ringCount) * 140 - 70
-    const lon = (Math.random() - 0.5) * 360
-    const [x, y, z] = latLonToVec3(lat, lon, R + 0.015)
-    const len = Math.sqrt(x * x + y * y + z * z) || 1
-    positions[idx * 3] = x
-    positions[idx * 3 + 1] = y
-    positions[idx * 3 + 2] = z
-    normals[idx * 3] = x / len
-    normals[idx * 3 + 1] = y / len
-    normals[idx * 3 + 2] = z / len
-    idx++
+  const latitudes = [-60, -30, 0, 30, 60]
+  const ringPerLat = Math.floor(PARTICLE_COUNT * 0.008)
+  for (const lat of latitudes) {
+    for (let i = 0; i < ringPerLat; i++) {
+      const lon = (i / ringPerLat) * 360 - 180
+      const [x, y, z] = latLonToVec3(lat + (Math.random() - 0.5) * 0.8, lon, R + 0.012)
+      push(x, y, z)
+    }
+  }
+
+  const longitudes = [-150, -90, -30, 30, 90, 150]
+  const ringPerLon = Math.floor(PARTICLE_COUNT * 0.006)
+  for (const lon of longitudes) {
+    for (let i = 0; i < ringPerLon; i++) {
+      const lat = (i / ringPerLon) * 170 - 85
+      const [x, y, z] = latLonToVec3(lat, lon + (Math.random() - 0.5) * 0.8, R + 0.012)
+      push(x, y, z)
+    }
+  }
+
+  const capCount = Math.floor(PARTICLE_COUNT * 0.01)
+  for (let i = 0; i < capCount; i++) {
+    const north = i < capCount / 2
+    const lat = north ? 78 + Math.random() * 12 : -78 - Math.random() * 12
+    const lon = Math.random() * 360 - 180
+    const [x, y, z] = latLonToVec3(lat, lon, R + 0.005)
+    push(x, y, z)
   }
 
   const goldenRatio = (1 + Math.sqrt(5)) / 2
-  for (let i = 0; i < oceanCount && idx < PARTICLE_COUNT; i++) {
-    const theta = 2 * Math.PI * i / goldenRatio
-    const phi = Math.acos(1 - 2 * (i + 0.5) / oceanCount)
-
-    const x = R * Math.sin(phi) * Math.cos(theta)
-    const y = R * Math.cos(phi)
-    const z = R * Math.sin(phi) * Math.sin(theta)
-
-    const len = Math.sqrt(x * x + y * y + z * z) || 1
-    positions[idx * 3] = x
-    positions[idx * 3 + 1] = y
-    positions[idx * 3 + 2] = z
-    normals[idx * 3] = x / len
-    normals[idx * 3 + 1] = y / len
-    normals[idx * 3 + 2] = z / len
-    idx++
-  }
-
   while (idx < PARTICLE_COUNT) {
-    const phi = Math.acos(2 * Math.random() - 1)
-    const theta = Math.random() * Math.PI * 2
+    const i = idx
+    const theta = 2 * Math.PI * i / goldenRatio
+    const phi = Math.acos(1 - 2 * (i + 0.5) / PARTICLE_COUNT)
+
     const x = R * Math.sin(phi) * Math.cos(theta)
     const y = R * Math.cos(phi)
     const z = R * Math.sin(phi) * Math.sin(theta)
-    const len = Math.sqrt(x * x + y * y + z * z) || 1
-    positions[idx * 3] = x
-    positions[idx * 3 + 1] = y
-    positions[idx * 3 + 2] = z
-    normals[idx * 3] = x / len
-    normals[idx * 3 + 1] = y / len
-    normals[idx * 3 + 2] = z / len
-    idx++
+    push(x, y, z)
   }
 
   return { positions, normals }

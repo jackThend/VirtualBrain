@@ -5,13 +5,13 @@ export function generateChaos(): Float32Array {
   const positions = new Float32Array(PARTICLE_COUNT * 3)
 
   for (let i = 0; i < PARTICLE_COUNT; i++) {
-    const baseX = (Math.random() - 0.5) * 6
+    const baseX = (Math.random() - 0.5) * 7
     const baseY = (Math.random() - 0.5) * 6
-    const baseZ = (Math.random() - 0.5) * 6
+    const baseZ = (Math.random() - 0.5) * 7
 
-    const turbX = fbm(baseX * 0.5, baseY * 0.5, baseZ * 0.5, 3) * 1.5
-    const turbY = fbm(baseX * 0.5 + 100, baseY * 0.5, baseZ * 0.5, 3) * 1.5
-    const turbZ = fbm(baseX * 0.5, baseY * 0.5 + 100, baseZ * 0.5, 3) * 1.5
+    const turbX = fbm(baseX * 0.45, baseY * 0.45, baseZ * 0.45, 4) * 2.0
+    const turbY = fbm(baseX * 0.45 + 100, baseY * 0.45, baseZ * 0.45, 4) * 2.0
+    const turbZ = fbm(baseX * 0.45, baseY * 0.45 + 100, baseZ * 0.45, 4) * 2.0
 
     positions[i * 3] = baseX + turbX
     positions[i * 3 + 1] = baseY + turbY
@@ -26,7 +26,7 @@ export function generatePolyhedra(count: number): Float32Array {
 
   for (let p = 0; p < count; p++) {
     const cx = (Math.random() - 0.5) * 5
-    const cy = (Math.random() - 0.5) * 5
+    const cy = (Math.random() - 0.5) * 4
     const cz = (Math.random() - 0.5) * 5
     const scale = 0.2 + Math.random() * 0.4
     const isTetra = Math.random() > 0.5
